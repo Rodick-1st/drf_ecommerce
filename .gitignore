@@ -1,0 +1,28 @@
+/.idea/
+/.venv/
+/.env/
+
+# Virtual environments (в любом месте)
+venv/
+env/
+ENV/
+
+# Python cache files (везде)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Database (везде)
+*.sqlite3
+*.db
+
+# Django specific (только в корне)
+/staticfiles/
+/media/
+/local_settings.py
+
+# Environment (везде)
+.env
+.env.*
+!.env.example
