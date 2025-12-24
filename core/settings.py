@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'apps.profiles',
     'apps.sellers',
     'apps.shop',
+    'apps.common'           #приложение для общей логики
 ]
 
 MIDDLEWARE = [
