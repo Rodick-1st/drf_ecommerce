@@ -20,3 +20,9 @@ def generate_unique_code(model: BaseModel, field: str) -> str:
     if not similar_object_exists:
         return unique_code
     return generate_unique_code(model, field)
+
+
+def set_dict_attr(obj, data):
+    for attr, value in data.items():
+        setattr(obj, attr, value) # Или obj.attr = value для каждого атрибута
+    return obj
