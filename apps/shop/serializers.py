@@ -84,3 +84,9 @@ class OrderSerializer(serializers.Serializer):
     @extend_schema_field(ShippingAddressSerializer)
     def get_shipping_details(self, obj):
         return ShippingAddressSerializer(obj).data
+
+
+class CheckItemOrderSerializer(serializers.Serializer):
+    product = ProductSerializer()
+    quantity = serializers.IntegerField()
+    total = serializers.FloatField(source="get_total")

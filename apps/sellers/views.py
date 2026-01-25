@@ -4,9 +4,12 @@ from rest_framework.views import APIView
 
 from apps.common.utils import set_dict_attr
 from apps.shop.models import Category, Product
-from apps.shop.serializers import ProductSerializer, CreateProductSerializer
 from apps.sellers.models import Seller
 from apps.sellers.serializers import SellerSerializer
+from apps.profiles.models import Order, OrderItem
+from apps.shop.serializers import ProductSerializer, CreateProductSerializer, OrderSerializer, \
+    CheckItemOrderSerializer
+
 
 tags = ["Sellers"]
 
@@ -133,3 +136,47 @@ class SellerProductView(APIView):
             return Response(data={"message": "Access is denied"}, status=403)
         product.delete()
         return Response(data={"message": "Product deleted successfully"}, status=200)
+
+
+class SellerOrdersView(APIView):
+    serializer_class = OrderSerializer
+
+    @extend_schema(
+        operation_id="seller_orders_view",
+        summary="Seller Orders Fetch",
+        description="""
+            This endpoint returns all orders for a particular seller.
+        """,
+        tags=tags
+    )
+    def get(self, request):
+        seller = request.user.seller
+        orders = (
+            Order.objects.filter(orderitems__product__seller=seller)
+            .distinct()
+            .order_by("-created_at")
+        )
+        serializer = self.serializer_class(orders, many=True)
+        return Response(data=serializer.data, status=200)
+
+
+class SellerOrderItemsView(APIView):
+    serializer_class = CheckItemOrderSerializer
+
+    @extend_schema(
+        operation_id="seller_order_items_view",
+        summary="Seller Items Order Fetch",
+        description="""
+            This endpoint returns all items order for a particular seller.
+        """,
+        tags=tags,
+
+    )
+    def get(self, request, **kwargs):
+        seller = request.user.seller
+        order = Order.objects.get_or_none(tx_ref=kwargs["tx_ref"])
+        if not order:
+            return Response(data={"message": "Order does not exist!"}, status=404)
+        order_items = OrderItem.objects.filter(order=order, product__seller=seller)
+        serializer = self.serializer_class(order_items, many=True)
+        return Response(data=serializer.data, status=200)
