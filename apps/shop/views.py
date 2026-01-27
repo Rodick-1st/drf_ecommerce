@@ -2,6 +2,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.common.permissions import IsSeller
 from apps.shop.serializers import CategorySerializer, ProductSerializer, OrderItemSerializer, ToggleCartItemSerializer, CheckoutSerializer, OrderSerializer
 from apps.shop.models import Category, Product
 from apps.sellers.models import Seller
@@ -13,7 +14,7 @@ tags = ["Shop"]
 
 class CategoriesView(APIView):
     serializer_class = CategorySerializer
-
+    permission_classes = [IsSeller]
     @extend_schema(
         summary="Categories Fetch",
         description="""
@@ -45,6 +46,7 @@ class CategoriesView(APIView):
 
 class ProductsByCategoryView(APIView):
     serializer_class = ProductSerializer
+    permission_classes = [IsSeller]
 
     @extend_schema(
         operation_id="category_products",
@@ -65,6 +67,7 @@ class ProductsByCategoryView(APIView):
 
 class ProductsView(APIView):
     serializer_class = ProductSerializer
+    permission_classes = [IsSeller]
 
     @extend_schema(
         operation_id="all_products",
@@ -82,6 +85,7 @@ class ProductsView(APIView):
 
 class ProductsBySellerView(APIView):
     serializer_class = ProductSerializer
+    permission_classes = [IsSeller]
 
     @extend_schema(
         summary="Seller Products Fetch",
@@ -101,6 +105,7 @@ class ProductsBySellerView(APIView):
 
 class ProductView(APIView):
     serializer_class = ProductSerializer
+    permission_classes = [IsSeller]
 
     def get_object(self, slug):
         product = Product.objects.get_or_none(slug=slug)
@@ -124,6 +129,7 @@ class ProductView(APIView):
 
 class CartView(APIView):
     serializer_class = OrderItemSerializer
+    permission_classes = [IsSeller]
 
     @extend_schema(
         summary="Cart Items Fetch",
@@ -181,6 +187,7 @@ class CartView(APIView):
 
 class CheckoutView(APIView):
     serializer_class = CheckoutSerializer
+    permission_classes = [IsSeller]
 
     @extend_schema(
         summary="Checkout",

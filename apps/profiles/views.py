@@ -9,12 +9,15 @@ from apps.common.utils import set_dict_attr
 from apps.profiles.serializers import ProfileSerializer, ShippingAddressSerializer
 from apps.profiles.models import ShippingAddress, Order, OrderItem
 from apps.shop.serializers import OrderSerializer, CheckItemOrderSerializer
+from apps.common.permissions import IsOwner, IsSeller
+
 
 tags = ["Profiles"]
 
 
 class ProfileView(APIView):
     serializer_class = ProfileSerializer
+    permission_classes = [IsOwner, IsSeller]
 
     @extend_schema(
         summary="Retrieve Profile",
@@ -61,6 +64,7 @@ class ProfileView(APIView):
 
 class ShippingAddressesView(APIView):
     serializer_class = ShippingAddressSerializer
+    permission_classes = [IsOwner, IsSeller]
 
     @extend_schema(
         summary="Shipping Addresses Fetch",
@@ -95,17 +99,13 @@ class ShippingAddressesView(APIView):
 
 class ShippingAddressViewID(APIView):
     serializer_class = ShippingAddressSerializer
+    permission_classes = [IsOwner, IsSeller]
 
     def get_object(self, user, shipping_id):
-        try:
-            shipping_uuid = UUID(shipping_id)
-        except ValueError as exc:
-            raise ValidationError({"message": "Invalid shipping id UUID format"}) from exc
-
-        shipping_address = ShippingAddress.objects.get_or_none(user=user, id=shipping_uuid)
-        if shipping_address is None:
+        shipping_address = ShippingAddress.objects.get_or_none(id=shipping_id)
+        if not shipping_address:
             raise NotFound(detail={"message": "Shipping Address does not exist!"}, code=404)
-
+        self.check_object_permissions(self.request, shipping_address)
         return shipping_address
 
     @extend_schema(
@@ -155,6 +155,7 @@ class ShippingAddressViewID(APIView):
 
 class OrdersView(APIView):
     serializer_class = OrderSerializer
+    permission_classes = [IsOwner, IsSeller]
 
     @extend_schema(
         operation_id="orders_view",
@@ -175,6 +176,7 @@ class OrdersView(APIView):
 
 class OrderItemsView(APIView):
     serializer_class = CheckItemOrderSerializer
+    permission_classes = [IsOwner, IsSeller]
 
     @extend_schema(
         operation_id="order_items_view",
