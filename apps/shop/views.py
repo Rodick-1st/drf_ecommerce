@@ -1,13 +1,16 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.utils import OpenApiParameter, OpenApiTypes
+from rest_framework import status
 
 from apps.common.permissions import IsSeller
 from apps.shop.serializers import CategorySerializer, ProductSerializer, OrderItemSerializer, ToggleCartItemSerializer, CheckoutSerializer, OrderSerializer
 from apps.shop.models import Category, Product
 from apps.sellers.models import Seller
 from apps.profiles.models import OrderItem, ShippingAddress, Order
-
+from apps.shop.filters import ProductFilter
+from apps.shop.schema_examples import PRODUCT_PARAM_EXAMPLE
 
 tags = ["Shop"]
 
@@ -67,7 +70,6 @@ class ProductsByCategoryView(APIView):
 
 class ProductsView(APIView):
     serializer_class = ProductSerializer
-    permission_classes = [IsSeller]
 
     @extend_schema(
         operation_id="all_products",
@@ -75,12 +77,76 @@ class ProductsView(APIView):
         description="""
             This endpoint returns all products.
         """,
-        tags=tags
+        tags=tags,
+        parameters=PRODUCT_PARAM_EXAMPLE,
     )
     def get(self, request, *args, **kwargs):
         products = Product.objects.select_related("category", "seller", "seller__user").all()
-        serializer = self.serializer_class(products, many=True)
-        return Response(data=serializer.data, status=200)
+        filterset = ProductFilter(request.query_params, queryset=products)
+        if filterset.is_valid():
+            queryset = filterset.qs
+            serializer = self.serializer_class(queryset, many=True)
+            return Response(serializer.data)
+        else:
+            return Response(filterset.errors, status=400)
+# class ProductsView(APIView):
+#     serializer_class = ProductSerializer
+#
+#     @extend_schema(
+#         operation_id="all_products",
+#         summary="Product Fetch",
+#         description="""
+#             This endpoint returns all products.
+#         """,
+#         tags=tags,
+#         parameters=[
+#             OpenApiParameter(
+#                 name="max_price",
+#                 description="Filter products by MAX current price",
+#                 required=False,
+#                 type=OpenApiTypes.INT,
+#             ),
+#             OpenApiParameter(
+#                 name="min_price",
+#                 description="Filter products by MIN current price",
+#                 required=False,
+#                 type=OpenApiTypes.INT,
+#             ),
+#         ]
+#     )
+#     def get(self, request, *args, **kwargs):
+#         products = Product.objects.select_related("category", "seller", "seller__user").all()
+#
+#         # Получаем параметры как строки
+#         max_price_str = request.GET.get('max_price')
+#         min_price_str = request.GET.get('min_price')
+#
+#         # Преобразование и валидация
+#         try:
+#             max_price = int(max_price_str) if max_price_str else None
+#             min_price = int(min_price_str) if min_price_str else None
+#         except (ValueError, TypeError):
+#             return Response(
+#                 data={"message": "min_price и max_price должны быть целыми числами"},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
+#
+#         # Проверка логики: оба параметра заданы
+#         if max_price is not None and min_price is not None:
+#             if max_price <= min_price:
+#                 return Response(
+#                     data={"message": "Максимальная цена должна быть больше минимальной"},
+#                     status=status.HTTP_400_BAD_REQUEST
+#                 )
+#
+#         # Фильтрация (max_price/min_price — int или None)
+#         if max_price is not None:
+#             products = products.filter(price_current__lte=max_price)
+#         if min_price is not None:
+#             products = products.filter(price_current__gte=min_price)
+#
+#         serializer = self.serializer_class(products, many=True)
+#         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 class ProductsBySellerView(APIView):

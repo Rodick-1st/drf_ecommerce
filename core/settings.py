@@ -43,8 +43,9 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'drf_spectacular',
-    'rest_framework_simplejwt',  # New
-    'rest_framework_simplejwt.token_blacklist',  # New
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+    'django_filters',
     'apps.accounts',
     'apps.profiles',
     'apps.sellers',
