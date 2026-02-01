@@ -4,7 +4,6 @@ from django.contrib.auth.models import AbstractBaseUser
 from apps.accounts.managers import CustomUserManager
 from apps.common.models import IsDeletedModel
 
-
 ACCOUNT_TYPE_CHOICES = (
     ("SELLER", "SELLER"),
     ("BUYER", "BUYER"),

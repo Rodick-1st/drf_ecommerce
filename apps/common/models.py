@@ -30,6 +30,7 @@ class IsDeletedModel(BaseModel):
     deleted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
+        ordering = ['-id']
         abstract = True
 
     objects = IsDeletedManager()

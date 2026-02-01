@@ -3,7 +3,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 
+from apps.common.paginations import CustomPagination
 from apps.common.permissions import IsSeller
 from apps.shop.serializers import CategorySerializer, ProductSerializer, OrderItemSerializer, ToggleCartItemSerializer, CheckoutSerializer, OrderSerializer
 from apps.shop.models import Category, Product
@@ -70,6 +72,7 @@ class ProductsByCategoryView(APIView):
 
 class ProductsView(APIView):
     serializer_class = ProductSerializer
+    pagination_class = CustomPagination
 
     @extend_schema(
         operation_id="all_products",
@@ -82,50 +85,51 @@ class ProductsView(APIView):
     )
     def get(self, request, *args, **kwargs):
         products = Product.objects.select_related("category", "seller", "seller__user").all()
-        filterset = ProductFilter(request.query_params, queryset=products)
+        filterset = ProductFilter(request.GET, queryset=products)
         if filterset.is_valid():
             queryset = filterset.qs
-            serializer = self.serializer_class(queryset, many=True)
-            return Response(serializer.data)
+            paginator = self.pagination_class()
+            paginated_queryset = paginator.paginate_queryset(queryset, request)
+            serializer = self.serializer_class(paginated_queryset, many=True)
+            return paginator.get_paginated_response(serializer.data)
         else:
             return Response(filterset.errors, status=400)
-# class ProductsView(APIView):
-#     serializer_class = ProductSerializer
-#
-#     @extend_schema(
-#         operation_id="all_products",
-#         summary="Product Fetch",
-#         description="""
-#             This endpoint returns all products.
-#         """,
-#         tags=tags,
-#         parameters=[
-#             OpenApiParameter(
-#                 name="max_price",
-#                 description="Filter products by MAX current price",
-#                 required=False,
-#                 type=OpenApiTypes.INT,
-#             ),
-#             OpenApiParameter(
-#                 name="min_price",
-#                 description="Filter products by MIN current price",
-#                 required=False,
-#                 type=OpenApiTypes.INT,
-#             ),
-#         ]
-#     )
-#     def get(self, request, *args, **kwargs):
-#         products = Product.objects.select_related("category", "seller", "seller__user").all()
-#
-#         # Получаем параметры как строки
-#         max_price_str = request.GET.get('max_price')
-#         min_price_str = request.GET.get('min_price')
-#
-#         # Преобразование и валидация
-#         try:
-#             max_price = int(max_price_str) if max_price_str else None
-#             min_price = int(min_price_str) if min_price_str else None
-#         except (ValueError, TypeError):
+## class ProductsView(APIView):
+##     serializer_class = ProductSerializer
+##
+##     @extend_schema(
+##         operation_id="all_products",
+##         summary="Product Fetch",
+##         description="""
+##             This endpoint returns all products.
+##         """,
+##         tags=tags,
+##         parameters=[
+##             OpenApiParameter(
+##                 name="max_price",
+##                 description="Filter products by MAX current price",
+##                 required=False,
+##                 type=OpenApiTypes.INT,
+##             ),
+##             OpenApiParameter(
+##                 name="min_price",
+##                 description="Filter products by MIN current price",
+##                 required=False,
+##                 type=OpenApiTypes.INT,
+##             ),
+# #        ]
+# #    )
+##     def get(self, request, *args, **kwargs):
+# #        products = Product.objects.select_related("category", "seller", "seller__user").all()
+##
+##         # Получаем параметры как строки
+#  #       max_price_str = request.GET.get('max_price')
+# #        min_price_str = request.GET.get('min_price')
+##
+##         # Преобразование и валидация
+# #        try:
+##             min_price = int(min_price_str) if min_price_str else None
+##         except (ValueError, TypeError):
 #             return Response(
 #                 data={"message": "min_price и max_price должны быть целыми числами"},
 #                 status=status.HTTP_400_BAD_REQUEST
