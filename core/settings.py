@@ -43,8 +43,9 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'drf_spectacular',
-    'rest_framework_simplejwt',  # New
-    'rest_framework_simplejwt.token_blacklist',  # New
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+    'django_filters',
     'apps.accounts',
     'apps.profiles',
     'apps.sellers',
@@ -131,12 +132,15 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
-SPECTACULAR_SETTINGS = {
-    "TITLE": "My First API", # название проекта
-    "VERSION": "0.0.1", # версия проекта
-    "SERVE_INCLUDE_SCHEMA": False, # исключить эндпоинт /schema
-}
 
+SPECTACULAR_SETTINGS = {
+    "TITLE": "My First API",  # название проекта
+    "VERSION": "0.0.1",  # версия проекта
+    "SERVE_INCLUDE_SCHEMA": False,  # исключить эндпоинт /schema
+    "SWAGGER_UI_SETTINGS": {
+        "persistAuthorization": True,  # не сбрасывать авторизацию
+    },
+}
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/

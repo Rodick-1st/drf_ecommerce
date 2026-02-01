@@ -103,6 +103,18 @@ class Order(BaseModel):
         super().save(*args, **kwargs)
 
 
+    @property
+    def get_cart_subtotal(self):
+        orderitems = self.orderitems.all()
+        total = sum([item.get_total for item in orderitems])
+        return total
+
+    @property
+    def get_cart_total(self):
+        total = self.get_cart_subtotal
+        return total
+
+
 class OrderItem(BaseModel):
     """
     Represents an item within an order.
