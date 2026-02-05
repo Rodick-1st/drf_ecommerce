@@ -94,63 +94,63 @@ class ProductsView(APIView):
             return paginator.get_paginated_response(serializer.data)
         else:
             return Response(filterset.errors, status=400)
-## class ProductsView(APIView):
-##     serializer_class = ProductSerializer
-##
-##     @extend_schema(
-##         operation_id="all_products",
-##         summary="Product Fetch",
-##         description="""
-##             This endpoint returns all products.
-##         """,
-##         tags=tags,
-##         parameters=[
-##             OpenApiParameter(
-##                 name="max_price",
-##                 description="Filter products by MAX current price",
-##                 required=False,
-##                 type=OpenApiTypes.INT,
-##             ),
-##             OpenApiParameter(
-##                 name="min_price",
-##                 description="Filter products by MIN current price",
-##                 required=False,
-##                 type=OpenApiTypes.INT,
-##             ),
+# # class ProductsView(APIView):
+# #     serializer_class = ProductSerializer
+# #
+# #     @extend_schema(
+# #         operation_id="all_products",
+# #         summary="Product Fetch",
+# #         description="""
+# #             This endpoint returns all products.
+# #         """,
+# #         tags=tags,
+# #         parameters=[
+# #             OpenApiParameter(
+# #                 name="max_price",
+# #                 description="Filter products by MAX current price",
+# #                 required=False,
+# #                 type=OpenApiTypes.INT,
+# #             ),
+# #             OpenApiParameter(
+# #                 name="min_price",
+# #                 description="Filter products by MIN current price",
+# #                 required=False,
+# #                 type=OpenApiTypes.INT,
+# #             ),
 # #        ]
 # #    )
-##     def get(self, request, *args, **kwargs):
+# #     def get(self, request, *args, **kwargs):
 # #        products = Product.objects.select_related("category", "seller", "seller__user").all()
-##
-##         # Получаем параметры как строки
-#  #       max_price_str = request.GET.get('max_price')
+# #
+# #         # Получаем параметры как строки
+# #       max_price_str = request.GET.get('max_price')
 # #        min_price_str = request.GET.get('min_price')
-##
-##         # Преобразование и валидация
+# #
+# #         # Преобразование и валидация
 # #        try:
-##             min_price = int(min_price_str) if min_price_str else None
-##         except (ValueError, TypeError):
-#             return Response(
-#                 data={"message": "min_price и max_price должны быть целыми числами"},
-#                 status=status.HTTP_400_BAD_REQUEST
-#             )
-#
-#         # Проверка логики: оба параметра заданы
-#         if max_price is not None and min_price is not None:
-#             if max_price <= min_price:
-#                 return Response(
-#                     data={"message": "Максимальная цена должна быть больше минимальной"},
-#                     status=status.HTTP_400_BAD_REQUEST
-#                 )
-#
-#         # Фильтрация (max_price/min_price — int или None)
-#         if max_price is not None:
-#             products = products.filter(price_current__lte=max_price)
-#         if min_price is not None:
-#             products = products.filter(price_current__gte=min_price)
-#
-#         serializer = self.serializer_class(products, many=True)
-#         return Response(data=serializer.data, status=status.HTTP_200_OK)
+# #             min_price = int(min_price_str) if min_price_str else None
+# #         except (ValueError, TypeError):
+# #             return Response(
+# #                 data={"message": "min_price и max_price должны быть целыми числами"},
+# #                 status=status.HTTP_400_BAD_REQUEST
+# #             )
+# #
+# #         # Проверка логики: оба параметра заданы
+# #         if max_price is not None and min_price is not None:
+# #             if max_price <= min_price:
+# #                 return Response(
+# #                     data={"message": "Максимальная цена должна быть больше минимальной"},
+# #                     status=status.HTTP_400_BAD_REQUEST
+# #                 )
+# #
+# #         # Фильтрация (max_price/min_price — int или None)
+# #         if max_price is not None:
+# #             products = products.filter(price_current__lte=max_price)
+# #         if min_price is not None:
+# #             products = products.filter(price_current__gte=min_price)
+# #
+# #         serializer = self.serializer_class(products, many=True)
+# #         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 class ProductsBySellerView(APIView):

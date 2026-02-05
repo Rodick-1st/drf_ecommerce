@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from apps.profiles.models import RATING_CHOICES
+
 
 class ProfileSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=25)
@@ -18,3 +20,15 @@ class ShippingAddressSerializer(serializers.Serializer):
     city = serializers.CharField(max_length=100)
     country = serializers.CharField(max_length=200)
     zipcode = serializers.CharField(max_length=6)
+
+
+class ProductReviewSerializer(serializers.Serializer):
+    user = ProfileSerializer(read_only=True)
+    product = serializers.SlugField()
+    rating = serializers.ChoiceField(choices=RATING_CHOICES)
+    text = serializers.CharField()
+
+    def validate_rating(self, value):
+        if value not in [1, 2, 3, 4, 5]:
+            raise serializers.ValidationError("Rating must be between 1 and 5")
+        return value

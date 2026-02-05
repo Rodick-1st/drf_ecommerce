@@ -6,8 +6,10 @@ from drf_spectacular.utils import extend_schema
 
 
 from apps.common.utils import set_dict_attr
-from apps.profiles.serializers import ProfileSerializer, ShippingAddressSerializer
-from apps.profiles.models import ShippingAddress, Order, OrderItem
+from apps.profiles.schema_examples import PROFILE_PARAM_EXAMPLE
+from apps.profiles.serializers import ProfileSerializer, ShippingAddressSerializer, ProductReviewSerializer
+from apps.profiles.models import ShippingAddress, Order, OrderItem, ProductReview
+from apps.shop.models import Product
 from apps.shop.serializers import OrderSerializer, CheckItemOrderSerializer
 from apps.common.permissions import IsOwner, IsSeller
 
@@ -196,3 +198,50 @@ class OrderItemsView(APIView):
         )
         serializer = self.serializer_class(order_items, many=True)
         return Response(data=serializer.data, status=200)
+
+
+class ProductReviewView(APIView):
+    serializer_class = ProductReviewSerializer
+    # permission_classes = ...
+
+    @extend_schema(
+        summary="Твой отзыв на товар",
+        description="""
+                    Посмотри свой уникальный отзыв на такой же уникальный товар.
+                """,
+        parameters=PROFILE_PARAM_EXAMPLE,
+    )
+    def get(self, request, **kwargs):
+        review = ProductReview.objects.select_related("product", "user").get_or_none(
+            user=request.user, product__slug=request.GET['slug'])
+        if not review:
+            return Response(data={"message": "Review does not exist!"}, status=404)
+        serializer = self.serializer_class(review)
+        return Response(data=serializer.data, status=200)
+
+    @extend_schema(
+        summary="Создание отзыва",
+        description="""
+                Этот ендпоинт создаёт отзыв.
+            """,
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            data = serializer.validated_data
+            prod_slug = data['product']
+            product = Product.objects.get_or_none(slug=prod_slug)
+
+            if not product:
+                return Response({"message": "No Product with that slug"}, status=404)
+            user_review = ProductReview.objects.get_or_none(product=product)
+            if user_review:
+                return Response({"message": "Вы уже писали отзыв на данный товар!"}, status=403)
+            data['product'] = product
+
+            review = ProductReview.objects.select_related("product", "user").create(user=request.user,**data)
+            ser = self.serializer_class(review)
+            return Response(data={"message": "Create your review успешно:)", "item": ser.data}, status=201)
+
+        else:
+            return Response(serializer.errors, status=400)
