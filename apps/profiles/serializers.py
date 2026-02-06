@@ -22,13 +22,21 @@ class ShippingAddressSerializer(serializers.Serializer):
     zipcode = serializers.CharField(max_length=6)
 
 
-class ProductReviewSerializer(serializers.Serializer):
-    user = ProfileSerializer(read_only=True)
-    product = serializers.SlugField()
+########################################################################################################################
+                                        # # # НИЖЕ МОИ СЕРИАЛИЗАТОРЫ № № №
+########################################################################################################################
+
+class BaseProductReviewSerializer(serializers.Serializer):
     rating = serializers.ChoiceField(choices=RATING_CHOICES)
-    text = serializers.CharField()
+    text = serializers.CharField(required=False)
 
     def validate_rating(self, value):
-        if value not in [1, 2, 3, 4, 5]:
-            raise serializers.ValidationError("Rating must be between 1 and 5")
+        if value not in (1, 2, 3, 4, 5):
+            raise serializers.ValidationError("Рейтинг должен быть в диапазоне между 1 и 5")
         return value
+
+
+class ProductReviewSerializer(BaseProductReviewSerializer):
+    user = ProfileSerializer(read_only=True)
+    product = serializers.SlugField()
+

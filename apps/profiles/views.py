@@ -6,8 +6,9 @@ from drf_spectacular.utils import extend_schema
 
 
 from apps.common.utils import set_dict_attr
-from apps.profiles.schema_examples import PROFILE_PARAM_EXAMPLE
-from apps.profiles.serializers import ProfileSerializer, ShippingAddressSerializer, ProductReviewSerializer
+from apps.profiles.schema_examples import PROFILE_PARAM_EXAMPLE, DELETE_PARAM
+from apps.profiles.serializers import ProfileSerializer, ShippingAddressSerializer, ProductReviewSerializer, \
+    BaseProductReviewSerializer
 from apps.profiles.models import ShippingAddress, Order, OrderItem, ProductReview
 from apps.shop.models import Product
 from apps.shop.serializers import OrderSerializer, CheckItemOrderSerializer
@@ -200,9 +201,22 @@ class OrderItemsView(APIView):
         return Response(data=serializer.data, status=200)
 
 
+########################################################################################################################
+                                        # # # ВНИЗУ МОИ ВЬЮШКИ # # #
+########################################################################################################################
+
+
 class ProductReviewView(APIView):
     serializer_class = ProductReviewSerializer
     # permission_classes = ...
+
+    def get_object(self, user, slug):
+        review = ProductReview.objects.select_related("product", "user").get_or_none(
+            user=user, product__slug=slug)
+        if not review:
+            return Response(data={"message": "Review does not exist!"}, status=404)
+        self.check_object_permissions(self.request, review)
+        return review
 
     @extend_schema(
         summary="Твой отзыв на товар",
@@ -212,10 +226,7 @@ class ProductReviewView(APIView):
         parameters=PROFILE_PARAM_EXAMPLE,
     )
     def get(self, request, **kwargs):
-        review = ProductReview.objects.select_related("product", "user").get_or_none(
-            user=request.user, product__slug=request.GET['slug'])
-        if not review:
-            return Response(data={"message": "Review does not exist!"}, status=404)
+        review = self.get_object(user=request.user, slug=request.GET['slug'])
         serializer = self.serializer_class(review)
         return Response(data=serializer.data, status=200)
 
@@ -227,21 +238,55 @@ class ProductReviewView(APIView):
     )
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            data = serializer.validated_data
-            prod_slug = data['product']
-            product = Product.objects.get_or_none(slug=prod_slug)
-
-            if not product:
-                return Response({"message": "No Product with that slug"}, status=404)
-            user_review = ProductReview.objects.get_or_none(product=product)
-            if user_review:
-                return Response({"message": "Вы уже писали отзыв на данный товар!"}, status=403)
-            data['product'] = product
-
-            review = ProductReview.objects.select_related("product", "user").create(user=request.user,**data)
-            ser = self.serializer_class(review)
-            return Response(data={"message": "Create your review успешно:)", "item": ser.data}, status=201)
-
-        else:
+        if not serializer.is_valid(raise_exception=True):
             return Response(serializer.errors, status=400)
+
+        data = serializer.validated_data
+        prod_slug = data['product']
+        product = Product.objects.get_or_none(slug=prod_slug)
+
+        if not product:
+            return Response({"message": "No Product with that slug"}, status=404)
+        user_review = ProductReview.objects.get_or_none(product=product)
+        if user_review:
+            return Response({"message": "Вы уже писали отзыв на данный товар!"}, status=403)
+        data['product'] = product
+
+        review = ProductReview.objects.select_related("product", "user").create(user=request.user,**data)
+        serializer = self.serializer_class(review)
+        return Response(data={"message": "Create your review успешно:)", "item": serializer.data}, status=201)
+
+    @extend_schema(
+        summary="Обновление отзыва",
+        description="""
+        Обновление, в т.ч. частичное обновление, отзыва!
+                """,
+        request=BaseProductReviewSerializer,
+        parameters=PROFILE_PARAM_EXAMPLE,
+    )
+    def patch(self, request, *args, **kwargs):
+        review = self.get_object(user=request.user, slug=request.GET['slug'])
+        serializer = BaseProductReviewSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            data = serializer.validated_data
+            review = set_dict_attr(review, data)
+            review.save()
+            serializer = self.serializer_class(review)
+            return Response(data={"message": "Обновление review успешно:)", "item": serializer.data}, status=201)
+
+    @extend_schema(
+        summary="Удаление отзыва",
+        description="""
+            Удаление, в т.ч. мягкое/полное удаление, отзыва!
+                    """,
+        parameters=DELETE_PARAM,
+    )
+    def delete(self, request, *args, **kwargs):
+        review = self.get_object(user=request.user, slug=request.GET['slug'])
+        var_del = request.GET('var_delete')
+        if var_del.lower()=='yes':
+            review.hard_delete()
+            return Response(data={"message": "Ваш отзыв успешно скрыт!"}, status=200)
+        review.delete()
+        return Response(data={"message": "Отзыв удалён безвозвратно!"}, status=200)
+
