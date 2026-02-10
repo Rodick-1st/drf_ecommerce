@@ -34,8 +34,20 @@ class IsDeletedManager(GetOrNoneManager):
     def get_queryset(self):
         return IsDeletedQuerySet(self.model).filter(is_deleted=False)
 
-    def unfiltered(self):
-        return IsDeletedQuerySet(self.model)
+    def get_deleted(self, **kwargs):
+        """Get, но только для скрытых объектов
+        Использую только для отзывов"""
+        try:
+            return IsDeletedQuerySet(self.model).select_related("product", "user").get(is_deleted=True, **kwargs)
+        except self.model.DoesNotExist:
+            return None
+
+    def unfiltered(self,**kwargs):
+        """Аналог get() для всех записей"""
+        try:
+            return IsDeletedQuerySet(self.model).get(**kwargs)
+        except self.model.DoesNotExist:
+            return None
 
     def hard_delete(self):
         return self.unfiltered().delete(hard_delete=True)

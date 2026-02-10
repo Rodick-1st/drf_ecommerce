@@ -2,11 +2,11 @@ from uuid import UUID
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema
-
+from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from apps.common.utils import set_dict_attr
-from apps.profiles.schema_examples import PROFILE_PARAM_EXAMPLE, DELETE_PARAM
+from apps.profiles.exceptions import ObjectNotFound
+from apps.profiles.schema_examples import DELETE_PARAM
 from apps.profiles.serializers import ProfileSerializer, ShippingAddressSerializer, ProductReviewSerializer, \
     BaseProductReviewSerializer
 from apps.profiles.models import ShippingAddress, Order, OrderItem, ProductReview
@@ -206,27 +206,26 @@ class OrderItemsView(APIView):
 ########################################################################################################################
 
 
-class ProductReviewView(APIView):
+class ProductReviewDetailView(APIView):
     serializer_class = ProductReviewSerializer
     # permission_classes = ...
 
-    def get_object(self, user, slug):
+    def get_object(self, user, slug, method=None):
         review = ProductReview.objects.select_related("product", "user").get_or_none(
             user=user, product__slug=slug)
-        if not review:
-            return Response(data={"message": "Review does not exist!"}, status=404)
+        if review is None and method != 'post':
+            raise ObjectNotFound("У вас нет отзыва на данный товар")
         self.check_object_permissions(self.request, review)
         return review
 
     @extend_schema(
         summary="Твой отзыв на товар",
         description="""
-                    Посмотри свой уникальный отзыв на такой же уникальный товар.
+                    Посмотри свой уникальный отзыв на продукт.
                 """,
-        parameters=PROFILE_PARAM_EXAMPLE,
     )
-    def get(self, request, **kwargs):
-        review = self.get_object(user=request.user, slug=request.GET['slug'])
+    def get(self, request, slug):
+        review = self.get_object(user=request.user, slug=slug)
         serializer = self.serializer_class(review)
         return Response(data=serializer.data, status=200)
 
@@ -235,24 +234,21 @@ class ProductReviewView(APIView):
         description="""
                 Этот ендпоинт создаёт отзыв.
             """,
+        request=BaseProductReviewSerializer,
     )
-    def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
-        if not serializer.is_valid(raise_exception=True):
-            return Response(serializer.errors, status=400)
-
-        data = serializer.validated_data
-        prod_slug = data['product']
-        product = Product.objects.get_or_none(slug=prod_slug)
-
+    def post(self, request, slug):
+        review = self.get_object(request.user,slug, method='post')
+        if review:
+            return Response({"message": "Вы уже писали отзыв на данный товар!"}, status=403)
+        product = Product.objects.get_or_none(slug=slug)
         if not product:
             return Response({"message": "No Product with that slug"}, status=404)
-        user_review = ProductReview.objects.get_or_none(product=product)
-        if user_review:
-            return Response({"message": "Вы уже писали отзыв на данный товар!"}, status=403)
-        data['product'] = product
-
-        review = ProductReview.objects.select_related("product", "user").create(user=request.user,**data)
+        serializer = BaseProductReviewSerializer(data=request.data)
+        if not serializer.is_valid(raise_exception=True):
+            return Response(serializer.errors, status=400)
+        user = request.user
+        data = serializer.validated_data
+        review = ProductReview.objects.create(user=user,product=product, rating=data['rating'], text=data['text'])
         serializer = self.serializer_class(review)
         return Response(data={"message": "Create your review успешно:)", "item": serializer.data}, status=201)
 
@@ -262,10 +258,9 @@ class ProductReviewView(APIView):
         Обновление, в т.ч. частичное обновление, отзыва!
                 """,
         request=BaseProductReviewSerializer,
-        parameters=PROFILE_PARAM_EXAMPLE,
     )
-    def patch(self, request, *args, **kwargs):
-        review = self.get_object(user=request.user, slug=request.GET['slug'])
+    def patch(self, request, slug):
+        review = self.get_object(user=request.user, slug=slug)
         serializer = BaseProductReviewSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             data = serializer.validated_data
@@ -281,12 +276,46 @@ class ProductReviewView(APIView):
                     """,
         parameters=DELETE_PARAM,
     )
-    def delete(self, request, *args, **kwargs):
-        review = self.get_object(user=request.user, slug=request.GET['slug'])
-        var_del = request.GET('var_delete')
+    def delete(self, request, slug):
+        review = self.get_object(user=request.user, slug=slug)
+        var_del = request.GET.get('variant_delete', '')
         if var_del.lower()=='yes':
             review.hard_delete()
-            return Response(data={"message": "Ваш отзыв успешно скрыт!"}, status=200)
+            return Response(data={"message": "Отзыв удалён безвозвратно!"}, status=200)
         review.delete()
-        return Response(data={"message": "Отзыв удалён безвозвратно!"}, status=200)
+        return Response(data={"message": "Ваш отзыв успешно скрыт!"}, status=200)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="Твой скрытый отзыв на товар",
+        description="Можешь посмотреть свой скрытый отзыв",
+    ),
+    delete=extend_schema(
+        summary="Удалить скрытый отзыв",
+        description="Полное и безвозвратное удаление скрытого отзыва",
+    ),
+)
+class DeletedProductReviewDetail(ProductReviewDetailView):
+    http_method_names = ['get', 'delete', 'head', 'options']
+
+    def get_object(self, user, slug):
+        deleted_reviews = ProductReview.objects.get_deleted(user=user, product__slug=slug)
+        if deleted_reviews is None:
+            raise ObjectNotFound("У вас нет скрытого отзыва на данный товар")
+        self.check_object_permissions(self.request, deleted_reviews)
+        return deleted_reviews
+
+
+
+
+#### КОРОЧЕ ПЛАН НА ЗАВТРА - НУЖНО ДОРЕАЛИЗОВАТЬ ЭНДПОИНТЫ С УДАЛЁННЫМИ ОТЗЫВАМИ, НО СДЕЛАТЬ ЭТО ЧЕРЕЗ VIEWSETы ИЛИ ДРУГИЕ КЛАССЫ (НО НЕ APIVIEW!!!).
+#### ДАЛЕЕ НУЖНО ПЕРЕПИСАТЬ ПЕРВУЮ ВЬЮШКУ ЧЕРЕЗ URL ПАРАМЕТРЫ, А НЕ ЧЕРЕЗ QUERY PARAM ЧТОБЫ SLUG ПЕРЕДАВАЛСЯ, ОЧЕНЬ ВАЖНАЯ ТЕМА, В ДИПСИКЕ ЕС ЧО ЕСТЬ ИНФА
+### Также вопросы для ревью у ИЛЬИ:
+### 1) Норм ли сделано в целом?
+### 2)
+###
+###
+###
+###
 

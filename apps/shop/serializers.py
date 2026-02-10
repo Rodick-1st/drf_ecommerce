@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 
-from apps.profiles.serializers import ShippingAddressSerializer
+
 
 
 class CategorySerializer(serializers.Serializer):
@@ -81,9 +81,9 @@ class OrderSerializer(serializers.Serializer):
         max_digits=100, decimal_places=2, source="get_cart_total"
     )
 
-    @extend_schema_field(ShippingAddressSerializer)
     def get_shipping_details(self, obj):
-        return ShippingAddressSerializer(obj).data
+        from schema_examples import get_shipping_detail
+        return get_shipping_detail(self, obj)
 
 
 class CheckItemOrderSerializer(serializers.Serializer):

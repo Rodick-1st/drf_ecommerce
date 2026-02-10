@@ -2,6 +2,15 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiTypes
 from core import settings
 
 
+from drf_spectacular.utils import extend_schema_field
+from apps.profiles.serializers import ShippingAddressSerializer
+
+
+@extend_schema_field(ShippingAddressSerializer)
+def get_shipping_detail(self, obj):
+    return ShippingAddressSerializer(obj).data
+
+
 PRODUCT_PARAM_EXAMPLE = [
     OpenApiParameter(
         name="max_price",

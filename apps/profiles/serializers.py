@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.profiles.models import RATING_CHOICES
+from apps.shop.serializers import ProductSerializer
 
 
 class ProfileSerializer(serializers.Serializer):
@@ -38,5 +39,5 @@ class BaseProductReviewSerializer(serializers.Serializer):
 
 class ProductReviewSerializer(BaseProductReviewSerializer):
     user = ProfileSerializer(read_only=True)
-    product = serializers.SlugField()
+    product = ProductSerializer(read_only=True)
 
