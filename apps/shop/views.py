@@ -1,4 +1,6 @@
-from drf_spectacular.utils import extend_schema
+from django.db.models import Avg
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes
@@ -7,10 +9,12 @@ from rest_framework.pagination import PageNumberPagination
 
 from apps.common.paginations import CustomPagination
 from apps.common.permissions import IsSeller
-from apps.shop.serializers import CategorySerializer, ProductSerializer, OrderItemSerializer, ToggleCartItemSerializer, CheckoutSerializer, OrderSerializer
+from apps.profiles.serializers import ProductReviewSerializer
+from apps.shop.serializers import CategorySerializer, ProductSerializer, OrderItemSerializer, \
+    ToggleCartItemSerializer, CheckoutSerializer, OrderSerializer, CheckProductRating
 from apps.shop.models import Category, Product
 from apps.sellers.models import Seller
-from apps.profiles.models import OrderItem, ShippingAddress, Order
+from apps.profiles.models import OrderItem, ShippingAddress, Order, ProductReview
 from apps.shop.filters import ProductFilter
 from apps.shop.schema_examples import PRODUCT_PARAM_EXAMPLE
 
@@ -94,63 +98,6 @@ class ProductsView(APIView):
             return paginator.get_paginated_response(serializer.data)
         else:
             return Response(filterset.errors, status=400)
-# # class ProductsView(APIView):
-# #     serializer_class = ProductSerializer
-# #
-# #     @extend_schema(
-# #         operation_id="all_products",
-# #         summary="Product Fetch",
-# #         description="""
-# #             This endpoint returns all products.
-# #         """,
-# #         tags=tags,
-# #         parameters=[
-# #             OpenApiParameter(
-# #                 name="max_price",
-# #                 description="Filter products by MAX current price",
-# #                 required=False,
-# #                 type=OpenApiTypes.INT,
-# #             ),
-# #             OpenApiParameter(
-# #                 name="min_price",
-# #                 description="Filter products by MIN current price",
-# #                 required=False,
-# #                 type=OpenApiTypes.INT,
-# #             ),
-# #        ]
-# #    )
-# #     def get(self, request, *args, **kwargs):
-# #        products = Product.objects.select_related("category", "seller", "seller__user").all()
-# #
-# #         # Получаем параметры как строки
-# #       max_price_str = request.GET.get('max_price')
-# #        min_price_str = request.GET.get('min_price')
-# #
-# #         # Преобразование и валидация
-# #        try:
-# #             min_price = int(min_price_str) if min_price_str else None
-# #         except (ValueError, TypeError):
-# #             return Response(
-# #                 data={"message": "min_price и max_price должны быть целыми числами"},
-# #                 status=status.HTTP_400_BAD_REQUEST
-# #             )
-# #
-# #         # Проверка логики: оба параметра заданы
-# #         if max_price is not None and min_price is not None:
-# #             if max_price <= min_price:
-# #                 return Response(
-# #                     data={"message": "Максимальная цена должна быть больше минимальной"},
-# #                     status=status.HTTP_400_BAD_REQUEST
-# #                 )
-# #
-# #         # Фильтрация (max_price/min_price — int или None)
-# #         if max_price is not None:
-# #             products = products.filter(price_current__lte=max_price)
-# #         if min_price is not None:
-# #             products = products.filter(price_current__gte=min_price)
-# #
-# #         serializer = self.serializer_class(products, many=True)
-# #         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 class ProductsBySellerView(APIView):
@@ -174,8 +121,8 @@ class ProductsBySellerView(APIView):
 
 
 class ProductView(APIView):
-    serializer_class = ProductSerializer
-    permission_classes = [IsSeller]
+    serializer_class = CheckProductRating
+    # permission_classes = [IsSeller]
 
     def get_object(self, slug):
         product = Product.objects.get_or_none(slug=slug)
@@ -187,12 +134,18 @@ class ProductView(APIView):
         description="""
             This endpoint returns the details for a product via the slug.
         """,
-        tags=tags
+        tags=['+ Авг рейтинг']
     )
     def get(self, request, *args, **kwargs):
         product = self.get_object(kwargs['slug'])
         if not product:
             return Response(data={"message": "Product does not exist!"}, status=404)
+
+        ### Логика добавления среднего рейтинга товара
+        product.avg_rating = ProductReview.objects.filter(product__slug=kwargs['slug'])\
+            .aggregate(avg_rating=Avg('rating')).get('avg_rating')
+
+        ### Поменял ProductSerializer на его наследника с полем avg_rating.
         serializer = self.serializer_class(product)
         return Response(data=serializer.data, status=200)
 
@@ -302,3 +255,24 @@ class CheckoutView(APIView):
 
         serializer = OrderSerializer(order)
         return Response(data={"message": "Checkout Successful", "item": serializer.data}, status=200)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="Все отзывы конкретного товара",
+        description="""
+        Введи slug продукта, чтобы увидеть ВСЕ отзывы на данный товар
+        (в т.ч. и других пользователей, но кроме скрытых)""",
+        tags=['Тут тоже я :)'],
+    ))
+class ProductReviewListView(ListAPIView):
+    serializer_class = ProductReviewSerializer
+    lookup_field = 'product__slug'
+    lookup_url_kwarg = 'product_slug'
+
+    # permission_classes = ...
+
+    def get_queryset(self):
+        return (ProductReview.objects.filter(
+            product__slug=self.kwargs[self.lookup_url_kwarg])
+            .select_related('user', 'product'))

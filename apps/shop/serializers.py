@@ -90,3 +90,7 @@ class CheckItemOrderSerializer(serializers.Serializer):
     product = ProductSerializer()
     quantity = serializers.IntegerField()
     total = serializers.FloatField(source="get_total")
+
+
+class CheckProductRating(ProductSerializer):
+    avg_rating = serializers.FloatField()
