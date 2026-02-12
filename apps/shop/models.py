@@ -59,7 +59,7 @@ class Product(IsDeletedModel):
     in_stock = models.IntegerField(default=5)
 
     # Only 3 images are allowed
-    image1 = models.ImageField(upload_to='product_images/')
+    image1 = models.ImageField(upload_to='product_images/', default='avatars/default.jpg')
     image2 = models.ImageField(upload_to='product_images/', blank=True)
     image3 = models.ImageField(upload_to='product_images/', blank=True)
 

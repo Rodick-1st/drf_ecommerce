@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 
 from apps.common.permissions import IsSeller
 from apps.common.utils import set_dict_attr
+from apps.profiles.exceptions import ObjectNotFound
 from apps.shop.models import Category, Product
 from apps.sellers.models import Seller
 from apps.sellers.serializers import SellerSerializer
@@ -90,8 +91,10 @@ class SellerProductView(APIView):
     serializer_class = CreateProductSerializer
     permission_classes = [IsSeller]
 
-    def get_object(self, slug):
-        product = Product.objects.get_or_none(slug=slug)
+    def get_object(self, request, slug):
+        product = Product.objects.unfiltered(slug=slug)
+        if product is None:
+            raise ObjectNotFound("Такого продукта не существует")
         return product
 
     @extend_schema(
@@ -102,7 +105,7 @@ class SellerProductView(APIView):
         tags=tags
     )
     def put(self, request, *args, **kwargs):
-        product = self.get_object(kwargs['slug'])
+        product = self.get_object(request, kwargs['slug'])
         if not product:
             return Response(data={"message": "Product does not exist!"}, status=404)
         elif product.seller != request.user.seller:
@@ -132,12 +135,12 @@ class SellerProductView(APIView):
         tags=tags
     )
     def delete(self, request, *args, **kwargs):
-        product = self.get_object(kwargs['slug'])
+        product = self.get_object(request, kwargs['slug'])
         if not product:
             return Response(data={"message": "Product does not exists!"}, status=404)
         elif product.seller != request.user.seller:
             return Response(data={"message": "Access is denied"}, status=403)
-        product.delete()
+        product.hard_delete()
         return Response(data={"message": "Product deleted successfully"}, status=200)
 
 

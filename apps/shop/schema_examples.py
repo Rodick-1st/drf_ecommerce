@@ -1,4 +1,14 @@
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes
+from core import settings
+
+
+from drf_spectacular.utils import extend_schema_field
+from apps.profiles.serializers import ShippingAddressSerializer
+
+
+@extend_schema_field(ShippingAddressSerializer)
+def get_shipping_detail(self, obj):
+    return ShippingAddressSerializer(obj).data
 
 
 PRODUCT_PARAM_EXAMPLE = [
@@ -25,5 +35,17 @@ PRODUCT_PARAM_EXAMPLE = [
         description="Filter products by date created",
         required=False,
         type=OpenApiTypes.DATE,
+    ),
+    OpenApiParameter(
+        name="page",
+        description="Retrieve a particular page. Defaults to 1",
+        required=False,
+        type=OpenApiTypes.INT,
+    ),
+    OpenApiParameter(
+        name="page_size",
+        description=f"The amount of item per page you want to display. Defaults to {settings.REST_FRAMEWORK['PAGE_SIZE']}",
+        required=False,
+        type=OpenApiTypes.INT,
     ),
 ]

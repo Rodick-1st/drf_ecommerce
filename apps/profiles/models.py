@@ -1,7 +1,7 @@
 from django.db import models
 
 from apps.accounts.models import User
-from apps.common.models import BaseModel
+from apps.common.models import BaseModel, IsDeletedModel
 from apps.common.utils import generate_unique_code
 from apps.shop.models import Product
 
@@ -147,3 +147,19 @@ class OrderItem(BaseModel):
 
     def __str__(self):
         return self.product.name
+
+
+from enum import Enum
+RATING_CHOICES = ((1, 1), (2, 2), (3, 3), (4, 4), (5, 5))
+
+# class ChooseEnum(Enum):
+
+
+class ProductReview(IsDeletedModel):
+    """
+    Это модель Django, представляющая отзыв пользователя на продукт
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='review')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='review')
+    rating = models.IntegerField(choices=RATING_CHOICES)
+    text = models.TextField(blank=True)
