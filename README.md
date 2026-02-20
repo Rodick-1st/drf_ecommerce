@@ -44,15 +44,18 @@
 
 ### 1. Клонирование репозитория
 
-```bash
+```bash`
 git clone https://github.com/Rodick-1st/drf_ecommerce.git
 cd drf_ecommerce
 
-2. Создание виртуального окружения
+### 2. Создание виртуального окружения
 python -m venv venv
-На Linux / macOS
+
+### На Linux / macOS
 source venv/bin/activate
-На Windows
+
+### На Windows
 venv\Scripts\activate
-3. Установка зависимостей
+
+### 3. Установка зависимостей
 pip install -r requirements.txt
