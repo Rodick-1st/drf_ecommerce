@@ -47,3 +47,12 @@
 ```bash
 git clone https://github.com/Rodick-1st/drf_ecommerce.git
 cd drf_ecommerce
+
+2. Создание виртуального окружения
+python -m venv venv
+На Linux / macOS
+source venv/bin/activate
+На Windows
+venv\Scripts\activate
+3. Установка зависимостей
+pip install -r requirements.txt
