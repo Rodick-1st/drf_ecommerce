@@ -43,19 +43,25 @@
 ## 🚀 Быстрый старт
 
 ### 1. Клонирование репозитория
-
-`bash
+```bash
 git clone https://github.com/Rodick-1st/drf_ecommerce.git
-cd drf_ecommerce`
+cd drf_ecommerce
+```
+
 
 ### 2. Создание виртуального окружения
+```bash
 python -m venv venv
-
+```
 ### На Linux / macOS
+```bash
 source venv/bin/activate
-
+```
 ### На Windows
+```bash
 venv\Scripts\activate
-
+```
 ### 3. Установка зависимостей
+```bash
 pip install -r requirements.txt
+```
