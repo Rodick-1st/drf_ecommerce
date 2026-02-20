@@ -44,9 +44,9 @@
 
 ### 1. Клонирование репозитория
 
-```bash`
+`bash
 git clone https://github.com/Rodick-1st/drf_ecommerce.git
-cd drf_ecommerce
+cd drf_ecommerce`
 
 ### 2. Создание виртуального окружения
 python -m venv venv
