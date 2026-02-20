@@ -1,4 +1,5 @@
 # DRF Ecommerce
+Из курса на stepik Илья Перминов (https://stepik.org/course/179999/info)
 
 Интернет-магазин (бэкенд) на **Python, Django и Django REST Framework** с набором базовых e-commerce API для управления товарами, пользователями, корзиной и заказами.
 
