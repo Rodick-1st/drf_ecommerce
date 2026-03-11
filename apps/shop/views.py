@@ -134,7 +134,7 @@ class ProductView(APIView):
         description="""
             This endpoint returns the details for a product via the slug.
         """,
-        tags=['+ Авг рейтинг']
+        tags=tags
     )
     def get(self, request, *args, **kwargs):
         product = self.get_object(kwargs['slug'])
@@ -263,7 +263,7 @@ class CheckoutView(APIView):
         description="""
         Введи slug продукта, чтобы увидеть ВСЕ отзывы на данный товар
         (в т.ч. и других пользователей, но кроме скрытых)""",
-        tags=['Тут тоже я :)'],
+        tags=tags,
     ))
 class ProductReviewListView(ListAPIView):
     serializer_class = ProductReviewSerializer

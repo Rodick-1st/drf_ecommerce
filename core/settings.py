@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'corsheaders',
     'rest_framework',
     'drf_spectacular',
     'rest_framework_simplejwt',
@@ -56,12 +57,18 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+
+#Принимает список URL-адресов доменов, с которых разрешены запросы. Каждый элемент должен быть полным URL
+# (включая протокол  http:// или  https://), например: "http://example.com", "https://api.example.com".
+CORS_ALLOWED_ORIGINS = ['http://127.0.0.1:8000']
 
 ROOT_URLCONF = 'core.urls'
 
@@ -131,7 +138,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',   # New
-    'PAGE_SIZE': 2   # New
+    'PAGE_SIZE': 4   # New
 }
 
 
