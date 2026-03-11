@@ -17,7 +17,7 @@ from apps.common.permissions import IsOwner, IsSeller
 
 
 tags = ["Profiles"]
-my_tag = ["Сам сделал :)"]
+my_tag = ["Reviews"]
 
 
 class ProfileView(APIView):
